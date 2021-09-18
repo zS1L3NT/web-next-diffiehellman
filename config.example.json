@@ -1,0 +1,16 @@
+{
+	"sql": {
+		"host": "",
+		"user": "",
+		"password": "",
+		"database": ""
+	},
+	"jwt_secret": "",
+	"smtp": {
+		"service": "",
+		"auth": {
+			"user": "",
+			"pass": ""
+		}
+	}
+}
