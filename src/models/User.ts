@@ -1,10 +1,10 @@
 export default interface User {
-	id: string
+	id: number
+	email: string
 	username: string
 	first_name: string
 	last_name: string
 	mobile_number: number
-	email: string
 	password: string
 	deactivated: boolean
 

@@ -3,7 +3,7 @@ import crypto from "crypto"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { LIST, NUMBER, OBJECT, OR, STRING, UNDEFINED, validate_express } from "validate-any"
-import { useTry, useTryAsync } from "no-try"
+import { useTry } from "no-try"
 import { iQuery } from "../sql"
 import User from "../models/User"
 import authenticated from "../middleware/authenticated"
@@ -19,29 +19,29 @@ export default (query: iQuery) => {
 		 * Login to an account
 		 * @public
 		 *
-		 * If the username and passwords match, this will sign a jwt token to return to the
+		 * If the email and passwords match, this will sign a jwt token to return to the
 		 * users which expires in an hour
 		 */
 		"/login",
 		validate_express("body", OBJECT({
-			username: STRING(),
+			email: STRING(),
 			password: STRING(),
 			client_key: STRING()
 		})),
 		async (req, res) => {
 			const {
-				username,
+				email,
 				password: password_aes,
 				client_key
 			} = req.body as {
-				username: string,
+				email: string,
 				password: string,
 				client_key: string
 			}
 
-			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE username = ?", [username])
+			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE email = ?", [email])
 			if (!existing_user) {
-				return res.status(401).send("User with that username doesn't exist")
+				return res.status(401).send("User with that email doesn't exist")
 			}
 
 			// If user's account is deactivated
@@ -59,7 +59,6 @@ export default (query: iQuery) => {
 				return res.status(401).send("Password is not correct")
 			}
 
-			const token = jwt.sign({ user_id: existing_user.id }, config.jwt_secret)
 			const {
 				password: _,
 				created_at,
@@ -68,7 +67,7 @@ export default (query: iQuery) => {
 			} = existing_user
 
 			res.status(200).send({
-				token,
+				token: jwt.sign({ user_id: existing_user.id }, config.jwt_secret, { expiresIn: "1h" }),
 				user: omitted_user
 			})
 		})
@@ -110,9 +109,9 @@ export default (query: iQuery) => {
 				client_key: string
 			}
 
-			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE username = ?", [username])
+			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE email = ?", [email])
 			if (existing_user) {
-				return res.status(401).send("User with that username exists")
+				return res.status(401).send("User with that email address exists")
 			}
 
 			const [err, password] = useTry(() => decrypt_aes(password_aes, client_key))
@@ -122,12 +121,11 @@ export default (query: iQuery) => {
 			const password_bcrypt = await bcrypt.hash(password, 10)
 
 			await query(
-				"INSERT INTO users(username, first_name, last_name, mobile_number, email, password) VALUES(?, ?, ?, ?, ?, ?)",
-				[username, first_name, last_name, mobile_number, email, password_bcrypt]
+				"INSERT INTO users(email, username, first_name, last_name, mobile_number, password) VALUES(?, ?, ?, ?, ?, ?)",
+				[email, username, first_name, last_name, mobile_number, password_bcrypt]
 			)
-			const [user]: [User] = await query("SELECT * FROM users WHERE username = ?", [username])
+			const [user]: [User] = await query("SELECT * FROM users WHERE email = ?", [email])
 
-			const token = jwt.sign({ user_id: user.id }, config.jwt_secret)
 			const {
 				password: _,
 				created_at,
@@ -136,7 +134,7 @@ export default (query: iQuery) => {
 			} = user
 
 			res.status(200).send({
-				token,
+				token: jwt.sign({ user_id: user.id }, config.jwt_secret, { expiresIn: "1h" }),
 				user: omitted_user
 			})
 		}
@@ -271,7 +269,6 @@ export default (query: iQuery) => {
 				return res.status(400).send(err.message)
 			}
 
-			console.log(server_secret)
 			dh_keys.set(client_key.toString("hex"), server_secret)
 			res.status(200).send({ server_key })
 		}

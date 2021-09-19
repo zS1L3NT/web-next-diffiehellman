@@ -1,5 +1,6 @@
 import express from "express"
-import accounts from "./routes/accounts"
+import accounts from "./routers/accounts"
+import reset_password from "./routers/reset_password"
 import sql_connect from "./sql"
 
 const PORT = 8000
@@ -17,6 +18,7 @@ const query = sql_connect()
 
 app.use(express.json())
 app.use("/accounts", accounts(query))
+app.use("/reset_password", reset_password(query))
 
 app.listen(PORT, () => {
 	console.log(`Server started on port ${PORT}`)

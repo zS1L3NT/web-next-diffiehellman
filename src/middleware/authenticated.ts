@@ -27,7 +27,7 @@ export default (query: iQuery) =>
 
 		const token = bearerMatch[1]
 		// @ts-ignore
-		const [err, user_id] = useTry(() => jwt.verify(token, config.jwt_secret).user_id as string)
+		const [err, user_id] = useTry(() => jwt.verify(token, config.jwt_secret).user_id as number)
 		if (err) {
 			return res.status(403).send("Unauthorized user")
 		}
