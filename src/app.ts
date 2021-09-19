@@ -1,4 +1,5 @@
 import express from "express"
+import path from "path"
 import accounts from "./routers/accounts"
 import reset_password from "./routers/reset_password"
 import sql_connect from "./sql"
@@ -17,6 +18,8 @@ const app = express()
 const query = sql_connect()
 
 app.use(express.json())
+app.use(express.static(path.join(__dirname, "../public")))
+app.use("/bower", express.static(path.join(__dirname, "../bower_components")))
 app.use("/accounts", accounts(query))
 app.use("/reset-password", reset_password(query))
 
