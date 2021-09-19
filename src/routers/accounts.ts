@@ -250,7 +250,7 @@ export default (query: iQuery) => {
 		 * secret key. With the secret key, the server will remove it from
 		 * the Map {@link dh_keys} and decrypt the password.
 		 */
-		"/exchange_secret",
+		"/exchange-secret",
 		validate_express("body", OBJECT({
 			client_key: OBJECT({
 				type: STRING("Buffer"),
@@ -278,7 +278,7 @@ export default (query: iQuery) => {
 }
 
 /**
- * Expect clients to have already hit "/accounts/exchange_secret"
+ * Expect clients to have already hit "/accounts/exchange-secret"
  * to get the server key and made their copy of the secret, allowing the
  * server to store the secret in {@link dh_keys} as well. After this
  * request, the secret will be removed from {@link dh_keys} because we

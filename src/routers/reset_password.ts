@@ -18,12 +18,13 @@ export default (query: iQuery) => {
 	router.post(
 		/**
 		 * Send an email to the user's account for resetting the password
+		 * @public
 		 *
 		 * Verifies if the email address is connected to an account, then sends
 		 * the email to their inbox. Create a record for the password reset in the database
 		 * with the expiry date
 		 */
-		"/send_email",
+		"/send-email",
 		validate_express("body", OBJECT({
 			email: STRING()
 		})),
@@ -63,12 +64,14 @@ export default (query: iQuery) => {
 
 	router.post(
 		/**
-		 * Verify if a password reset token is valid and hasn't expired. Deletes
-		 * the record if it exists to clean up space in the database. Then signs a
-		 * JWT token for the user to reset their password. JWT Token will be valid
-		 * for 5 minutes
+		 * Verify if a password reset token is valid and hasn't expired.
+		 * @public
+		 * 
+		 * Deletes the record if it exists to clean up space in the database.
+		 * Then signs a JWT token for the user to reset their password. JWT Token
+		 * will be valid for 5 minutes
 		 */
-		"/verify_token",
+		"/verify-token",
 		validate_express("body", OBJECT({
 			token: STRING()
 		})),

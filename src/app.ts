@@ -18,7 +18,7 @@ const query = sql_connect()
 
 app.use(express.json())
 app.use("/accounts", accounts(query))
-app.use("/reset_password", reset_password(query))
+app.use("/reset-password", reset_password(query))
 
 app.listen(PORT, () => {
 	console.log(`Server started on port ${PORT}`)
