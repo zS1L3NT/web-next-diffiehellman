@@ -2,8 +2,6 @@ requirejs.config({
 	baseUrl: "./assets/js",
 	paths: {
 		axios: "../../bower/axios/dist/axios",
-		crypto: "../../bower/crypto-js"
+		"encrypt-aes": "./encrypt-aes",
 	}
 })
-
-console.log("hi")

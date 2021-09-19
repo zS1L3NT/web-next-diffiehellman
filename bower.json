@@ -7,7 +7,6 @@
 	"homepage": "https://www.github.com/zS1L3NT/web-node-whattoeat",
 	"dependencies": {
 		"axios": "^0.21.4",
-		"crypto-js": "^4.1.1",
 		"requirejs": "^2.3.6"
 	}
 }

@@ -242,7 +242,7 @@ export default (query: iQuery) => {
 		/**
 		 * Generate a diffie hellman secret key for both server and client.
 		 * This key is meant to encrypt the password on the client with
-		 * AES256 so that it can be sent to the server encrypted
+		 * AES-256 so that it can be sent to the server encrypted
 		 *
 		 * The Map {@link dh_keys} is meant to store the public key mapped
 		 * to the private key. Now when the encrypted password and the
@@ -296,7 +296,7 @@ const decrypt_aes = (password_aes: string, client_key: string): string => {
 	}
 	dh_keys.delete(client_key)
 
-	// We repeat and cut the key because AES256 keys need to be 32 bytes long
+	// We repeat and cut the key because AES-256 keys need to be 32 bytes long
 	const key = secret.repeat(3).slice(0, 32)
 	const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), Buffer.alloc(16, 0))
 

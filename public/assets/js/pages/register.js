@@ -1,3 +1,3 @@
-define(["axios", "crypto/aes"], (axios, aes) => {
-	console.log("Axios POST:", axios.post)
+define(["encrypt-aes"], encrypt_aes => {
+	console.log("Encrypt AES:", encrypt_aes)
 })
