@@ -4,5 +4,4 @@
 /build
 config.json
 *.test.ts
-ts-node.js
 .rest

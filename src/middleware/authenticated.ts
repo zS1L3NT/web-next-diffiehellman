@@ -17,24 +17,24 @@ export default (query: iQuery) =>
 		const bearer = req.header("authorization")
 
 		if (!bearer) {
-			return res.status(403).send("Unauthorized user")
+			return res.status(403).send("Unauthorized user, no authorization token found")
 		}
 
 		const bearerMatch = bearer.match(/^Bearer (.*)$/)
 		if (!bearerMatch) {
-			return res.status(403).send("Unauthorized user")
+			return res.status(403).send("Unauthorized user, invalid authorization token")
 		}
 
 		const token = bearerMatch[1]
 		// @ts-ignore
 		const [err, user_id] = useTry(() => jwt.verify(token, config.jwt_secret).user_id as number)
 		if (err) {
-			return res.status(403).send("Unauthorized user")
+			return res.status(403).send("Unauthorized user, token was invalid")
 		}
 
 		const [user]: [User?] = await query("SELECT * FROM users WHERE id = ?", [user_id])
 		if (!user) {
-			return res.status(403).send("Unauthorized user")
+			return res.status(403).send("Unauthorized user, token data was invalid")
 		}
 
 		req.user = user
