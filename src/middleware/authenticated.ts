@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import User from "../models/User"
 import { useTry } from "no-try"
-import { iQuery } from "../sql"
+import ServerCache from "../ServerCache"
 
 const config = require("../../config.json")
 
@@ -12,7 +12,7 @@ const config = require("../../config.json")
  * of the signed in user
  * @param query
  */
-export default (query: iQuery) =>
+export default (cache: ServerCache) =>
 	async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
 		const bearer = req.header("authorization")
 
@@ -32,7 +32,7 @@ export default (query: iQuery) =>
 			return res.status(403).send("Unauthorized user, token was invalid")
 		}
 
-		const [user]: [User?] = await query("SELECT * FROM users WHERE id = ?", [user_id])
+		const [user]: [User?] = await cache.query("SELECT * FROM users WHERE id = ?", [user_id])
 		if (!user) {
 			return res.status(403).send("Unauthorized user, token data was invalid")
 		}

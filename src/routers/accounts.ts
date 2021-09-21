@@ -4,16 +4,14 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { LIST, NUMBER, OBJECT, OR, STRING, UNDEFINED, validate_express } from "validate-any"
 import { useTry, useTryAsync } from "no-try"
-import { iQuery } from "../sql"
 import User from "../models/User"
 import authenticated from "../middleware/authenticated"
 import { OAuth2Client } from "google-auth-library"
+import ServerCache from "../ServerCache"
 
 const config = require("../../config.json")
-const dh_keys: Map<string, string> = new Map()
-const jwt_blacklist: string[] = []
 
-export default (query: iQuery): express.Router => {
+export default (cache: ServerCache): express.Router => {
 	const router = express.Router()
 
 	router.post(
@@ -44,7 +42,7 @@ export default (query: iQuery): express.Router => {
 				client_key: string
 			}
 
-			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE email = ?", [email])
+			const [existing_user]: [User?] = await cache.query("SELECT * FROM users WHERE email = ?", [email])
 			if (!existing_user) {
 				return res.status(401).send("User with that email doesn't exist")
 			}
@@ -54,7 +52,7 @@ export default (query: iQuery): express.Router => {
 				return res.status(403).send("Your account is deactivated")
 			}
 
-			const [err, password] = useTry(() => decrypt_aes(password_aes, client_key))
+			const [err, password] = useTry(() => decrypt_aes(cache, password_aes, client_key))
 			if (err) {
 				// Could not decrypt password
 				return res.status(401).send("Could not decrypt password: " + err.message)
@@ -122,23 +120,23 @@ export default (query: iQuery): express.Router => {
 				client_key: string
 			}
 
-			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE email = ?", [email])
+			const [existing_user]: [User?] = await cache.query("SELECT * FROM users WHERE email = ?", [email])
 			if (existing_user) {
 				return res.status(401).send("User with that email address exists")
 			}
 
-			const [err, password] = useTry(() => decrypt_aes(password_aes, client_key))
+			const [err, password] = useTry(() => decrypt_aes(cache, password_aes, client_key))
 			if (err) {
 				// Could not decrypt password
 				return res.status(401).send("Could not decrypt password: " + err.message)
 			}
 			const password_bcrypt = await bcrypt.hash(password, 10)
 
-			await query(
+			await cache.query(
 				"INSERT INTO users(email, username, first_name, last_name, mobile_number, password) VALUES(?, ?, ?, ?, ?, ?)",
 				[email, username, first_name, last_name, mobile_number, password_bcrypt]
 			)
-			const [user]: [User] = await query("SELECT * FROM users WHERE email = ?", [email])
+			const [user]: [User] = await cache.query("SELECT * FROM users WHERE email = ?", [email])
 
 			const omitted_user = user as any
 			delete omitted_user.password
@@ -186,7 +184,7 @@ export default (query: iQuery): express.Router => {
 
 			const { given_name: first_name, family_name: last_name, email, picture } = ticket.getPayload()!
 
-			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE email = ?", [email])
+			const [existing_user]: [User?] = await cache.query("SELECT * FROM users WHERE email = ?", [email])
 			if (existing_user) {
 				if (existing_user.deactivated) {
 					return res.status(403).send("Your account is deactivated")
@@ -196,12 +194,12 @@ export default (query: iQuery): express.Router => {
 					token: jwt.sign({ user_id: existing_user.id }, config.jwt_secret, { expiresIn: "1h" })
 				})
 			} else {
-				await query(
+				await cache.query(
 					"INSERT INTO users(email, username, first_name, last_name, picture) VALUES(?, ?, ?, ?, ?)",
 					[email, email?.split("@")[0], first_name, last_name, picture]
 				)
 
-				const [user]: [User] = await query("SELECT * FROM users WHERE email = ?", [email])
+				const [user]: [User] = await cache.query("SELECT * FROM users WHERE email = ?", [email])
 				res.status(200).send({
 					token: jwt.sign({ user_id: user.id }, config.jwt_secret, { expiresIn: "1h" })
 				})
@@ -218,7 +216,7 @@ export default (query: iQuery): express.Router => {
 		 * also be provided after a key exchange has happened
 		 */
 		"/update",
-		authenticated(query),
+		authenticated(cache),
 		validate_express(
 			"body",
 			OBJECT({
@@ -253,7 +251,7 @@ export default (query: iQuery): express.Router => {
 				sets.push(`${key} = ?`)
 
 				if (key === "password") {
-					const [err, password] = useTry(() => decrypt_aes(password_aes!, client_key!))
+					const [err, password] = useTry(() => decrypt_aes(cache, password_aes!, client_key!))
 					if (err) {
 						// Could not decrypt password
 						return res.status(401).send("Could not decrypt password: " + err.message)
@@ -270,8 +268,8 @@ export default (query: iQuery): express.Router => {
 				return res.status(400).send("Cannot update none of the user's properties")
 			}
 
-			await query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
-			const [user]: [User] = await query("SELECT * FROM users WHERE id = ?", [req.user!.id])
+			await cache.query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
+			const [user]: [User] = await cache.query("SELECT * FROM users WHERE id = ?", [req.user!.id])
 
 			const omitted_user = user as any
 			delete omitted_user.password
@@ -290,9 +288,9 @@ export default (query: iQuery): express.Router => {
 		 * @private
 		 */
 		"/deactivate",
-		authenticated(query),
+		authenticated(cache),
 		async (req, res) => {
-			await query("UPDATE users SET deactivated = 1 WHERE id = ?", [req.user!.id])
+			await cache.query("UPDATE users SET deactivated = 1 WHERE id = ?", [req.user!.id])
 			res.status(200).end()
 		}
 	)
@@ -303,9 +301,9 @@ export default (query: iQuery): express.Router => {
 		 * @private
 		 */
 		"/reactivate",
-		authenticated(query),
+		authenticated(cache),
 		async (req, res) => {
-			await query("UPDATE users SET deactivated = 0 WHERE id = ?", [req.user!.id])
+			await cache.query("UPDATE users SET deactivated = 0 WHERE id = ?", [req.user!.id])
 			res.status(200).end()
 		}
 	)
@@ -316,11 +314,11 @@ export default (query: iQuery): express.Router => {
 		 * This key is meant to encrypt the password on the client with
 		 * AES-256 so that it can be sent to the server encrypted
 		 *
-		 * The Map {@link dh_keys} is meant to store the public key mapped
+		 * The Map {@link cache.dh_keys} is meant to store the public key mapped
 		 * to the private key. Now when the encrypted password and the
 		 * public key is sent to the server, the server has access to the
 		 * secret key. With the secret key, the server will remove it from
-		 * the Map {@link dh_keys} and decrypt the password.
+		 * the Map {@link cache.dh_keys} and decrypt the password.
 		 */
 		"/exchange-secret",
 		validate_express(
@@ -344,7 +342,7 @@ export default (query: iQuery): express.Router => {
 				return res.status(400).send(err.message)
 			}
 
-			dh_keys.set(client_key.toString("hex"), server_secret)
+			cache.dh_keys.set(client_key.toString("hex"), server_secret)
 			res.status(200).send({ server_key })
 		}
 	)
@@ -355,8 +353,8 @@ export default (query: iQuery): express.Router => {
 /**
  * Expect clients to have already hit "/accounts/exchange-secret"
  * to get the server key and made their copy of the secret, allowing the
- * server to store the secret in {@link dh_keys} as well. After this
- * request, the secret will be removed from {@link dh_keys} because we
+ * server to store the secret in {@link cache.dh_keys} as well. After this
+ * request, the secret will be removed from {@link cache.dh_keys} because we
  * can't store them forever.
  *
  * With the secret, we will decrypt the password that is encrypted with AES
@@ -364,12 +362,12 @@ export default (query: iQuery): express.Router => {
  * @param password_aes
  * @param client_key
  */
-const decrypt_aes = (password_aes: string, client_key: string): string => {
-	const secret = dh_keys.get(client_key)
+const decrypt_aes = (cache: ServerCache, password_aes: string, client_key: string): string => {
+	const secret = cache.dh_keys.get(client_key)
 	if (!secret) {
 		throw new Error("Failed to exchange encryption secrets")
 	}
-	dh_keys.delete(client_key)
+	cache.dh_keys.delete(client_key)
 
 	// We repeat and cut the key because AES-256 keys need to be 32 bytes long
 	const key = secret.repeat(3).slice(0, 32)
