@@ -3,13 +3,15 @@ import crypto from "crypto"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { LIST, NUMBER, OBJECT, OR, STRING, UNDEFINED, validate_express } from "validate-any"
-import { useTry } from "no-try"
+import { useTry, useTryAsync } from "no-try"
 import { iQuery } from "../sql"
 import User from "../models/User"
 import authenticated from "../middleware/authenticated"
+import { OAuth2Client } from "google-auth-library"
 
 const config = require("../../config.json")
 const dh_keys: Map<string, string> = new Map()
+const jwt_blacklist: string[] = []
 
 export default (query: iQuery): express.Router => {
 	const router = express.Router()
@@ -23,19 +25,22 @@ export default (query: iQuery): express.Router => {
 		 * users which expires in an hour
 		 */
 		"/login",
-		validate_express("body", OBJECT({
-			email: STRING(),
-			password: STRING(),
-			client_key: STRING()
-		})),
+		validate_express(
+			"body",
+			OBJECT({
+				email: STRING(),
+				password: STRING(),
+				client_key: STRING()
+			})
+		),
 		async (req, res) => {
 			const {
 				email,
 				password: password_aes,
 				client_key
 			} = req.body as {
-				email: string,
-				password: string,
+				email: string
+				password: string
 				client_key: string
 			}
 
@@ -51,7 +56,13 @@ export default (query: iQuery): express.Router => {
 
 			const [err, password] = useTry(() => decrypt_aes(password_aes, client_key))
 			if (err) {
-				return res.status(401).send(err.message)
+				// Could not decrypt password
+				return res.status(401).send("Could not decrypt password: " + err.message)
+			}
+
+			// Password doesn't exist, authenticated with Google
+			if (!existing_user.password) {
+				return res.status(403).send("Email account used another method to login")
 			}
 
 			const passwords_match = await bcrypt.compare(password, existing_user.password)
@@ -68,7 +79,8 @@ export default (query: iQuery): express.Router => {
 				token: jwt.sign({ user_id: existing_user.id }, config.jwt_secret, { expiresIn: "1h" }),
 				user: omitted_user
 			})
-		})
+		}
+	)
 
 	router.post(
 		/**
@@ -79,15 +91,18 @@ export default (query: iQuery): express.Router => {
 		 * sign a jwt token to return to the users which expires in an hour
 		 */
 		"/register",
-		validate_express("body", OBJECT({
-			username: STRING(),
-			first_name: STRING(),
-			last_name: STRING(),
-			mobile_number: NUMBER(),
-			email: STRING(),
-			password: STRING(),
-			client_key: STRING()
-		})),
+		validate_express(
+			"body",
+			OBJECT({
+				username: STRING(),
+				first_name: STRING(),
+				last_name: STRING(),
+				mobile_number: NUMBER(),
+				email: STRING(),
+				password: STRING(),
+				client_key: STRING()
+			})
+		),
 		async (req, res) => {
 			const {
 				username,
@@ -98,12 +113,12 @@ export default (query: iQuery): express.Router => {
 				password: password_aes,
 				client_key
 			} = req.body as {
-				username: string,
-				first_name: string,
-				last_name: string,
-				mobile_number: number,
-				email: string,
-				password: string,
+				username: string
+				first_name: string
+				last_name: string
+				mobile_number: number
+				email: string
+				password: string
 				client_key: string
 			}
 
@@ -114,7 +129,8 @@ export default (query: iQuery): express.Router => {
 
 			const [err, password] = useTry(() => decrypt_aes(password_aes, client_key))
 			if (err) {
-				return res.status(401).send(err.message)
+				// Could not decrypt password
+				return res.status(401).send("Could not decrypt password: " + err.message)
 			}
 			const password_bcrypt = await bcrypt.hash(password, 10)
 
@@ -136,6 +152,63 @@ export default (query: iQuery): express.Router => {
 		}
 	)
 
+	router.post(
+		/**
+		 * Authenticate a user with Google
+		 * 
+		 * Check's if the Google Authentication ID token is valid first.
+		 * If the email is registered already, the user will be logged in to the account.
+		 * If not, the user's accuont will be created with the details from the Google
+		 * Authentication. Returns a JWT token for usage in the front end
+		 */
+		"/google-authenticate",
+		validate_express(
+			"body",
+			OBJECT({
+				id_token: STRING()
+			})
+		),
+		async (req, res) => {
+			const id_token = req.body.id_token as string
+
+			// OAuth2Client to check if ID token of Google Authentication was valid
+			const google = new OAuth2Client(config.google)
+			const [err, ticket] = await useTryAsync(
+				async () =>
+					await google.verifyIdToken({
+						idToken: id_token,
+						audience: config.google
+					})
+			)
+			if (err) {
+				return res.status(401).send("Invalid ID Token")
+			}
+
+			const { given_name: first_name, family_name: last_name, email, picture } = ticket.getPayload()!
+
+			const [existing_user]: [User?] = await query("SELECT * FROM users WHERE email = ?", [email])
+			if (existing_user) {
+				if (existing_user.deactivated) {
+					return res.status(403).send("Your account is deactivated")
+				}
+
+				res.status(200).send({
+					token: jwt.sign({ user_id: existing_user.id }, config.jwt_secret, { expiresIn: "1h" })
+				})
+			} else {
+				await query(
+					"INSERT INTO users(email, username, first_name, last_name, picture) VALUES(?, ?, ?, ?, ?)",
+					[email, email?.split("@")[0], first_name, last_name, picture]
+				)
+
+				const [user]: [User] = await query("SELECT * FROM users WHERE email = ?", [email])
+				res.status(200).send({
+					token: jwt.sign({ user_id: user.id }, config.jwt_secret, { expiresIn: "1h" })
+				})
+			}
+		}
+	)
+
 	router.put(
 		/**
 		 * Update a user's credentials
@@ -146,20 +219,20 @@ export default (query: iQuery): express.Router => {
 		 */
 		"/update",
 		authenticated(query),
-		validate_express("body", OBJECT({
-			username: OR(STRING(), UNDEFINED()),
-			first_name: OR(STRING(), UNDEFINED()),
-			last_name: OR(STRING(), UNDEFINED()),
-			mobile_number: OR(NUMBER(), UNDEFINED()),
-			email: OR(STRING(), UNDEFINED()),
-			password: OR(STRING(), UNDEFINED()),
-			client_key: OR(STRING(), UNDEFINED()),
-		})),
+		validate_express(
+			"body",
+			OBJECT({
+				username: OR(STRING(), UNDEFINED()),
+				first_name: OR(STRING(), UNDEFINED()),
+				last_name: OR(STRING(), UNDEFINED()),
+				mobile_number: OR(NUMBER(), UNDEFINED()),
+				email: OR(STRING(), UNDEFINED()),
+				password: OR(STRING(), UNDEFINED()),
+				client_key: OR(STRING(), UNDEFINED())
+			})
+		),
 		async (req, res) => {
-			const {
-				password: password_aes,
-				client_key
-			} = req.body as {
+			const { password: password_aes, client_key } = req.body as {
 				username?: string
 				first_name?: string
 				last_name?: string
@@ -169,8 +242,12 @@ export default (query: iQuery): express.Router => {
 				client_key?: string
 			}
 
+			// Lines to add to the SQL query in the form of a string[]
 			const sets: string[] = []
+
+			// Values to put in the query array of values
 			const values: any[] = []
+
 			for (const [key, value] of Object.entries(req.body)) {
 				if (key === "client_key") continue
 				sets.push(`${key} = ?`)
@@ -178,7 +255,8 @@ export default (query: iQuery): express.Router => {
 				if (key === "password") {
 					const [err, password] = useTry(() => decrypt_aes(password_aes!, client_key!))
 					if (err) {
-						return res.status(401).send(err.message)
+						// Could not decrypt password
+						return res.status(401).send("Could not decrypt password: " + err.message)
 					}
 
 					const password_bcrypt = await bcrypt.hash(password, 10)
@@ -189,7 +267,7 @@ export default (query: iQuery): express.Router => {
 			}
 
 			if (sets.length === 0) {
-				return res.status(400).send("Cannot update nothing none of the user's properties")
+				return res.status(400).send("Cannot update none of the user's properties")
 			}
 
 			await query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
@@ -245,12 +323,15 @@ export default (query: iQuery): express.Router => {
 		 * the Map {@link dh_keys} and decrypt the password.
 		 */
 		"/exchange-secret",
-		validate_express("body", OBJECT({
-			client_key: OBJECT({
-				type: STRING("Buffer"),
-				data: LIST(NUMBER())
+		validate_express(
+			"body",
+			OBJECT({
+				client_key: OBJECT({
+					type: STRING("Buffer"),
+					data: LIST(NUMBER())
+				})
 			})
-		})),
+		),
 		(req, res) => {
 			const client_key = Buffer.from(req.body.client_key.data)
 

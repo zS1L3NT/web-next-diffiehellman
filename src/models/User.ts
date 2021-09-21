@@ -4,10 +4,10 @@ export default interface User {
 	username: string
 	first_name: string
 	last_name: string
-	mobile_number: number
-	password: string
 	deactivated: boolean
 
+	password?: string
+	mobile_number?: number
 	address?: string
 	gender?: "M" | "F"
 	picture?: string
