@@ -12,7 +12,7 @@ import { useTryAsync } from "no-try"
 
 const config = require("../../config.json")
 
-export default (query: iQuery) => {
+export default (query: iQuery): express.Router => {
 	const router = express.Router()
 
 	router.post(
@@ -36,7 +36,7 @@ export default (query: iQuery) => {
 				return res.status(400).send("No account registered with that email address")
 			}
 
-			const token = crypto.randomBytes(50).toString("base64").replaceAll(/[+\/]/g, "")
+			const token = crypto.randomBytes(50).toString("base64").replaceAll(/[+/]/g, "")
 
 			const HTML = fs.readFileSync(path.join(__dirname, "../../email/reset_password.html"), "utf8")
 			const [err] = await useTryAsync(

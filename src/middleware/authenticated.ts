@@ -13,7 +13,7 @@ const config = require("../../config.json")
  * @param query
  */
 export default (query: iQuery) =>
-	async (req: Request, res: Response, next: NextFunction) => {
+	async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
 		const bearer = req.header("authorization")
 
 		if (!bearer) {

@@ -11,7 +11,7 @@ import authenticated from "../middleware/authenticated"
 const config = require("../../config.json")
 const dh_keys: Map<string, string> = new Map()
 
-export default (query: iQuery) => {
+export default (query: iQuery): express.Router => {
 	const router = express.Router()
 
 	router.post(
@@ -59,12 +59,10 @@ export default (query: iQuery) => {
 				return res.status(401).send("Password is not correct")
 			}
 
-			const {
-				password: _,
-				created_at,
-				updated_at,
-				...omitted_user
-			} = existing_user
+			const omitted_user = existing_user as any
+			delete omitted_user.password
+			delete omitted_user.created_at
+			delete omitted_user.updated_at
 
 			res.status(200).send({
 				token: jwt.sign({ user_id: existing_user.id }, config.jwt_secret, { expiresIn: "1h" }),
@@ -126,12 +124,10 @@ export default (query: iQuery) => {
 			)
 			const [user]: [User] = await query("SELECT * FROM users WHERE email = ?", [email])
 
-			const {
-				password: _,
-				created_at,
-				updated_at,
-				...omitted_user
-			} = user
+			const omitted_user = user as any
+			delete omitted_user.password
+			delete omitted_user.created_at
+			delete omitted_user.updated_at
 
 			res.status(200).send({
 				token: jwt.sign({ user_id: user.id }, config.jwt_secret, { expiresIn: "1h" }),
@@ -199,12 +195,10 @@ export default (query: iQuery) => {
 			await query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
 			const [user]: [User] = await query("SELECT * FROM users WHERE id = ?", [req.user!.id])
 
-			const {
-				password: _,
-				created_at,
-				updated_at,
-				...omitted_user
-			} = user
+			const omitted_user = user as any
+			delete omitted_user.password
+			delete omitted_user.created_at
+			delete omitted_user.updated_at
 
 			res.status(200).send({
 				user: omitted_user
