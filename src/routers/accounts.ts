@@ -1,12 +1,12 @@
-import express from "express"
-import crypto from "crypto"
 import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
-import { LIST, NUMBER, OBJECT, OR, STRING, UNDEFINED, validate_express } from "validate-any"
-import { useTry, useTryAsync } from "no-try"
-import User from "../models/User"
-import authenticated from "../middleware/authenticated"
+import crypto from "crypto"
+import express from "express"
 import { OAuth2Client } from "google-auth-library"
+import jwt from "jsonwebtoken"
+import { useTry, useTryAsync } from "no-try"
+import { LIST, NUMBER, OBJECT, OR, STRING, UNDEFINED, validate_express } from "validate-any"
+import authenticated from "../middleware/authenticated"
+import User from "../models/User"
 import ServerCache from "../ServerCache"
 
 const config = require("../../config.json")
@@ -24,7 +24,6 @@ export default (cache: ServerCache): express.Router => {
 		 */
 		"/login",
 		validate_express(
-			"body",
 			OBJECT({
 				email: STRING(),
 				password: STRING(),
@@ -90,7 +89,6 @@ export default (cache: ServerCache): express.Router => {
 		 */
 		"/register",
 		validate_express(
-			"body",
 			OBJECT({
 				username: STRING(),
 				first_name: STRING(),
@@ -153,7 +151,7 @@ export default (cache: ServerCache): express.Router => {
 	router.post(
 		/**
 		 * Authenticate a user with Google
-		 * 
+		 *
 		 * Check's if the Google Authentication ID token is valid first.
 		 * If the email is registered already, the user will be logged in to the account.
 		 * If not, the user's accuont will be created with the details from the Google
@@ -161,7 +159,6 @@ export default (cache: ServerCache): express.Router => {
 		 */
 		"/google-authenticate",
 		validate_express(
-			"body",
 			OBJECT({
 				id_token: STRING()
 			})
@@ -218,7 +215,6 @@ export default (cache: ServerCache): express.Router => {
 		"/update",
 		authenticated(cache),
 		validate_express(
-			"body",
 			OBJECT({
 				username: OR(STRING(), UNDEFINED()),
 				first_name: OR(STRING(), UNDEFINED()),
@@ -322,7 +318,6 @@ export default (cache: ServerCache): express.Router => {
 		 */
 		"/exchange-secret",
 		validate_express(
-			"body",
 			OBJECT({
 				client_key: OBJECT({
 					type: STRING("Buffer"),

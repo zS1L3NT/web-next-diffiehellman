@@ -28,8 +28,7 @@ export default class ServerCache {
 			this.db.query(sql, values, (error, result) => {
 				if (error) {
 					reject(error)
-				}
-				else {
+				} else {
 					resolve(result)
 				}
 			})

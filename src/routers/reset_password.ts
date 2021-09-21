@@ -1,13 +1,13 @@
-import express from "express"
 import crypto from "crypto"
-import nodemailer from "nodemailer"
-import jwt from "jsonwebtoken"
-import path from "path"
+import express from "express"
 import fs from "fs"
+import jwt from "jsonwebtoken"
+import { useTryAsync } from "no-try"
+import nodemailer from "nodemailer"
+import path from "path"
 import { OBJECT, STRING, validate_express } from "validate-any"
 import PasswordReset from "../models/PasswordReset"
 import User from "../models/User"
-import { useTryAsync } from "no-try"
 import ServerCache from "../ServerCache"
 
 const config = require("../../config.json")
@@ -26,7 +26,6 @@ export default (cache: ServerCache): express.Router => {
 		 */
 		"/send-email",
 		validate_express(
-			"body",
 			OBJECT({
 				email: STRING()
 			})
@@ -74,7 +73,6 @@ export default (cache: ServerCache): express.Router => {
 		 */
 		"/verify-token",
 		validate_express(
-			"body",
 			OBJECT({
 				token: STRING()
 			})
