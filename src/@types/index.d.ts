@@ -1,6 +1,6 @@
 import User from "../models/User"
 
-export { }
+export {}
 
 declare global {
 	namespace Express {
