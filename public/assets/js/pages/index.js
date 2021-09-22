@@ -1,3 +1,5 @@
-define(["axios"], axios => {
-	console.log("Axios POST:", axios.post)
+var axios
+
+define(["axios"], axios_ => {
+	axios = axios_
 })

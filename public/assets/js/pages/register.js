@@ -1,3 +1,6 @@
-define(["encrypt-aes"], encrypt_aes => {
-	console.log("Encrypt AES:", encrypt_aes)
+var axios
+var encrypt_aes
+
+define(["axios", "encrypt-aes"], (axios_, encrypt_aes_) => {
+	[axios, encrypt_aes] = [axios_, encrypt_aes_]
 })
