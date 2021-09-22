@@ -30,6 +30,10 @@ export default (server: Server) =>
 			return res.status(403).send("Unauthorized user, token was invalid")
 		}
 
+		if (server.jwt_blacklist.includes(token)) {
+			return res.status(403).send("Unauthorized user, authorization token deauthenticated")
+		}
+
 		const [user]: [User?] = await server.query("SELECT * FROM users WHERE id = ?", [user_id])
 		if (!user) {
 			return res.status(403).send("Unauthorized user, token data was invalid")

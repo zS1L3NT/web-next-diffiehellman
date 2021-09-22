@@ -34,7 +34,7 @@ define(["axios"], axios => async password => {
 		data: {
 			server_key: { data: server_key_data }
 		}
-	} = await axios.put("http://localhost:8000/accounts/exchange-secret", {
+	} = await axios.put("http://localhost:8000/authentication/exchange-secret", {
 		client_key
 	})
 	const server_key = Buffer.from(server_key_data)

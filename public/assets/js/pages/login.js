@@ -5,7 +5,7 @@ define(["axios", "encrypt-aes"], (axios, encrypt_aes) => {
 
 	onGoogleSignIn = auth => {
 		console.log(auth.getAuthResponse().id_token);
-		axios.post("http://localhost:8000/accounts/google-authenticate", { id_token: auth.getAuthResponse().id_token })
+		axios.post("http://localhost:8000/authentication/google-authenticate", { id_token: auth.getAuthResponse().id_token })
 			.then(res => {
 				console.log("Authenticated:", res.data.token)
 			})
