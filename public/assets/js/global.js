@@ -6,3 +6,21 @@ requirejs.config({
 		jquery: "../../bower/jquery/dist/jquery.min",
 	}
 })
+
+define(["axios"], axios => axios.defaults.baseurl = "http://localhost:8000")
+
+/**
+ * Calculate each axios request header at runtime to check if a session token 
+ * exists, then returns the appropriate header for the request.
+ * 
+ * @returns Authentication object
+ */
+const axios_auth = () => {
+	const token = sessionStorage.getItem("token")
+	if (token) {
+		return {
+			Authorization: `Bearer ${token}`
+		}
+	}
+	return {}
+}

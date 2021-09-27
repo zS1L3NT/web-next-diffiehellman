@@ -1,5 +1,5 @@
 define(["axios"], axios => {
-	axios.post("http://localhost:8000/authentication/logout", null, { Authorization: `Bearer ${sessionStorage.getItem("token")}` })
+	axios.post("/authentication/logout", null, axios_auth())
 		.then(() => {
 			console.log("Signed out")
 		})

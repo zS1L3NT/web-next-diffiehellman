@@ -8,8 +8,11 @@ define(["axios", "encrypt-aes"], (axios_, encrypt_aes_) => {
 	}
 })
 
+/**
+ * Callback from a Google sign in
+ */
 var onGoogleSignIn = auth => {
-	axios.post("http://localhost:8000/authentication/google-authenticate", { id_token: auth.getAuthResponse().id_token })
+	axios.post("/authentication/google-authenticate", { id_token: auth.getAuthResponse().id_token })
 		.then(res => {
 			gapi.auth2.getAuthInstance().disconnect()
 			sessionStorage.setItem("token", res.data.token)
@@ -20,6 +23,9 @@ var onGoogleSignIn = auth => {
 		})
 }
 
+/**
+ * Start the login process
+ */
 var login = async () => {
 	const email = document.getElementById("email").value
 	const password = document.getElementById("password").value
@@ -29,7 +35,7 @@ var login = async () => {
 	}
 
 	const { password: password_aes, client_key } = await encrypt_aes(password)
-	axios.post("http://localhost:8000/accounts/login", {
+	axios.post("/accounts/login", {
 		email,
 		password: password_aes,
 		client_key
