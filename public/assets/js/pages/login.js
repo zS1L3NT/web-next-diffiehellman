@@ -25,11 +25,11 @@ var login = async () => {
 	const password = document.getElementById("password").value
 
 	if (email === "" || password === "") {
-		return
+		throw new Error("Empty email or password")
 	}
 
-	const { password: password_aes, client_key } = await encrypt_password(password)
-	axios.post("http://loclhost.com:8000/accounts/login", {
+	const { password: password_aes, client_key } = await encrypt_aes(password)
+	axios.post("http://localhost:8000/accounts/login", {
 		email,
 		password: password_aes,
 		client_key
