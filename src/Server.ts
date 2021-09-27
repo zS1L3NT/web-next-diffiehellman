@@ -1,5 +1,5 @@
 import crypto from "crypto"
-import sql from "mysql"
+import sql from "mysql2"
 
 /**
  * Class containing all server vairables. Since routes are in different
