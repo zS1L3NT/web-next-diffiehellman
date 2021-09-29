@@ -10,7 +10,7 @@ export default (server: Server) => [
 	"put",
 	authenticated(server),
 	async (req: Request, res: Response) => {
-		await server.query("UPDATE users SET deactivated = 1 WHERE id = ?", [req.user!.id])
+		await server.query("UPDATE users SET active = 0 WHERE id = ?", [req.user!.id])
 		res.status(200).end()
 	}
 ]

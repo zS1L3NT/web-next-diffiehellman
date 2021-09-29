@@ -27,12 +27,11 @@ export default (server: Server) => [
 
 		// OAuth2Client to check if ID token of Google Authentication was valid
 		const google = new OAuth2Client(server.config.google)
-		const [err, ticket] = await useTryAsync(
-			async () =>
-				await google.verifyIdToken({
-					idToken: id_token,
-					audience: server.config.google
-				})
+		const [err, ticket] = await useTryAsync(() =>
+			google.verifyIdToken({
+				idToken: id_token,
+				audience: server.config.google
+			})
 		)
 		if (err) {
 			return res.status(401).send("Invalid ID Token")
@@ -42,8 +41,9 @@ export default (server: Server) => [
 
 		const [existing_user]: [User?] = await server.query("SELECT * FROM users WHERE email = ?", [email])
 		if (existing_user) {
-			if (existing_user.deactivated) {
-				return res.status(403).send("Your account is deactivated")
+			// If account not activated, activate it, since this email is garunteed to exist
+			if (existing_user.active === null) {
+				await server.query("UPDATE users SET active = 1 WHERE email = ?", [email])
 			}
 
 			res.status(200).send({
@@ -51,7 +51,7 @@ export default (server: Server) => [
 			})
 		} else {
 			await server.query(
-				"INSERT INTO users(email, username, first_name, last_name, picture) VALUES(?, ?, ?, ?, ?)",
+				"INSERT INTO users(email, username, first_name, last_name, picture, active) VALUES(?, ?, ?, ?, ?, 1)",
 				[email, email?.split("@")[0], first_name, last_name, picture]
 			)
 

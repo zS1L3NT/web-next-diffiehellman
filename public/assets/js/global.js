@@ -15,11 +15,12 @@ define(["axios"], axios => axios.defaults.baseurl = "http://localhost:8000")
  * 
  * @returns Authentication object
  */
-const axios_auth = () => {
-	const token = sessionStorage.getItem("token")
+const axios_auth = (token = sessionStorage.getItem("token")) => {
 	if (token) {
 		return {
-			Authorization: `Bearer ${token}`
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
 		}
 	}
 	return {}

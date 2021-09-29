@@ -4,7 +4,7 @@ define(["axios"], axios => {
 			console.log("Signed out")
 		})
 		.catch(err => {
-			console.log("Error signing out:", err.message)
+			console.error(err.response.data)
 		})
 		.finally(() => {
 			sessionStorage.removeItem("token")

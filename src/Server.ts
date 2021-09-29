@@ -1,5 +1,6 @@
 import crypto from "crypto"
 import sql from "mysql2"
+import Emailer from "./Emailer"
 
 /**
  * Class containing all server vairables. Since routes are in different
@@ -7,6 +8,7 @@ import sql from "mysql2"
  * through the files. Hence this class is required
  */
 export default class Server {
+	public emailer: Emailer
 	public db: sql.Connection
 	public dh_keys: Map<string, string>
 	public jwt_blacklist: string[]
@@ -15,6 +17,7 @@ export default class Server {
 
 	public constructor() {
 		this.config = require("../config.json")
+		this.emailer = new Emailer(this)
 		this.db = sql.createConnection(this.config.sql)
 		this.dh_keys = new Map<string, string>()
 		this.jwt_blacklist = []

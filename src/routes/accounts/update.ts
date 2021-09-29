@@ -38,6 +38,8 @@ export default (server: Server) => [
 			client_key?: string
 		}
 
+		let send_email = false
+
 		// Lines to add to the SQL query in the form of a string[]
 		const sets: string[] = []
 
@@ -48,17 +50,32 @@ export default (server: Server) => [
 			if (key === "client_key") continue
 			sets.push(`${key} = ?`)
 
-			if (key === "password") {
-				const [err, password] = useTry(() => server.decrypt_aes(password_aes!, client_key!))
-				if (err) {
-					// Could not decrypt password
-					return res.status(401).send("Could not decrypt password: " + err.message)
-				}
+			switch (key) {
+				case "password":
+					const [err, password] = useTry(() => server.decrypt_aes(password_aes!, client_key!))
+					if (err) {
+						// Could not decrypt password
+						return res.status(401).send("Could not decrypt password: " + err.message)
+					}
 
-				const password_bcrypt = await bcrypt.hash(password, 10)
-				values.push(password_bcrypt)
-			} else {
-				values.push(value)
+					const password_bcrypt = await bcrypt.hash(password, 10)
+					values.push(password_bcrypt)
+					break
+				case "email":
+					send_email = true
+					values.push(value)
+
+					// Set user's account to not activated yet, since email changed
+					sets.push(`active = ?`)
+					values.push(0)
+
+					const [existing_user]: [User?] = await server.query("SELECT * FROM users WHERE email = ?", [value])
+					if (existing_user) {
+						return res.status(400).send("User with that email address already exists!")
+					}
+				default:
+					values.push(value)
+					break
 			}
 		}
 
@@ -68,6 +85,10 @@ export default (server: Server) => [
 
 		await server.query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
 		const [user]: [User] = await server.query("SELECT * FROM users WHERE id = ?", [req.user!.id])
+
+		if (send_email) {
+			await server.emailer.send_account_activation(user.id, user.email)
+		}
 
 		const omitted_user = user as any
 		delete omitted_user.password

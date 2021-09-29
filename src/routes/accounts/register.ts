@@ -63,6 +63,8 @@ export default (server: Server) => [
 		)
 		const [user]: [User] = await server.query("SELECT * FROM users WHERE email = ?", [email])
 
+		await server.emailer.send_account_activation(user.id, user.email)
+
 		const omitted_user = user as any
 		delete omitted_user.password
 		delete omitted_user.created_at

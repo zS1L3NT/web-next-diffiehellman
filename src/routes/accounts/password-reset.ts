@@ -1,9 +1,5 @@
-import crypto from "crypto"
 import { Request, Response } from "express"
-import fs from "fs"
 import { useTryAsync } from "no-try"
-import nodemailer from "nodemailer"
-import path from "path"
 import { OBJECT, STRING, validate_express } from "validate-any"
 import User from "../../models/User"
 import Server from "../../Server"
@@ -31,26 +27,12 @@ export default (server: Server) => [
 			return res.status(400).send("No account registered with that email address")
 		}
 
-		const token = crypto.randomBytes(50).toString("base64").replaceAll(/[+/]/g, "")
-
-		const HTML = fs.readFileSync(path.join(__dirname, "../../email/reset_password.html"), "utf8")
-		const [err] = await useTryAsync(() =>
-			nodemailer.createTransport(server.config.smtp).sendMail({
-				from: server.config.smtp.auth.user,
-				to: email,
-				subject: "[WhatToEat] Password Reset",
-				html: HTML.replaceAll("{{link}}", server.config.host + "/reset_password/" + token)
-			})
-		)
+		const [err] = await useTryAsync(() => server.emailer.send_password_reset(existing_user.id, email))
 		if (err) {
 			console.log(err)
 			return res.status(400).send("Email address entered is invalid")
 		}
 
-		await server.query(
-			"INSERT INTO password_resets(user_id, token, expires) VALUES(?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE))",
-			[existing_user.id, token]
-		)
 		res.status(200).end()
 	}
 ]

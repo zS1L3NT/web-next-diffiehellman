@@ -50,7 +50,7 @@ define(["axios"], axios => async password => {
 
 	return {
 		password: password_aes,
-		client_key
+		client_key: client_key.toString("hex")
 	}
 })
 

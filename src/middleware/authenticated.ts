@@ -8,6 +8,9 @@ import Server from "../Server"
  * Middleware for checking if a client's request is authenticated
  * Must pass the Bearer token which is a JWT signature containing the id
  * of the signed in user
+ * 
+ * Does not care if the account is deactivated or not
+ * 
  * @param query
  */
 export default (server: Server) =>
@@ -37,6 +40,10 @@ export default (server: Server) =>
 		const [user]: [User?] = await server.query("SELECT * FROM users WHERE id = ?", [user_id])
 		if (!user) {
 			return res.status(403).send("Unauthorized user, token data was invalid")
+		}
+
+		if (user.active !== null && !user.active) {
+			return res.status(403).send("Unauthorized user, account not activated")
 		}
 
 		req.user = user

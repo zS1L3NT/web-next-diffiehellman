@@ -19,7 +19,7 @@ var onGoogleSignIn = auth => {
 			window.location.href = "/restaurants.html"
 		})
 		.catch(err => {
-			console.error("Authentication failed:", err.message)
+			console.error(err.response.data)
 		})
 }
 
@@ -31,7 +31,7 @@ var login = async () => {
 	const password = document.getElementById("password").value
 
 	if (email === "" || password === "") {
-		throw new Error("Empty email or password")
+		throw new Error("Fill in all fields")
 	}
 
 	const { password: password_aes, client_key } = await encrypt_aes(password)
@@ -45,6 +45,6 @@ var login = async () => {
 			window.location.href = "/restaurants.html"
 		})
 		.catch(err => {
-			console.error("Authentication failed:", err.message)
+			console.error(err.response.data)
 		})
 }

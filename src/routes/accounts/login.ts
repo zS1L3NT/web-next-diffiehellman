@@ -38,9 +38,10 @@ export default (server: Server) => [
 			return res.status(401).send("User with that email doesn't exist")
 		}
 
-		// If user's account is deactivated
-		if (existing_user.deactivated) {
-			return res.status(403).send("Your account is deactivated")
+		// If user hasn't activated their account yet
+		if (existing_user.active === null) {
+			await server.emailer.send_account_activation(existing_user.id, existing_user.email)
+			return res.status(403).send("Your account has not been activated yet, another email has been send to you for account activation")
 		}
 
 		const [err, password] = useTry(() => server.decrypt_aes(password_aes, client_key))
