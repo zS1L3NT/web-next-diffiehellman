@@ -4,7 +4,7 @@ define(["axios"], axios => {
 	axios.post("/verify-token", { token, action: "account-activate" })
 		.then(res => {
 			sessionStorage.setItem("token", res.data.token)
-			axios.put("/accounts/reactivate", null, axios_auth())
+			axios.put("/account/reactivate", null, axios_auth())
 				.then(() => {
 					window.location.href = "/restaurants.html"
 				})

@@ -35,7 +35,7 @@ var login = async () => {
 	}
 
 	const { password: password_aes, client_key } = await encrypt_aes(password)
-	axios.post("/accounts/login", {
+	axios.post("/account/login", {
 		email,
 		password: password_aes,
 		client_key

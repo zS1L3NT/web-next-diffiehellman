@@ -27,7 +27,7 @@ define(["axios", "encrypt-aes"], (axios_, encrypt_aes_) => {
  */
 const send_email = () => {
 	const email = document.getElementById("email").value
-	axios.post("/accounts/password-reset", { email })
+	axios.post("/account/password-reset", { email })
 		.then(() => {
 			console.log("Sent email")
 		})
@@ -52,7 +52,7 @@ const reset_password = async () => {
 	}
 
 	const { password: password_aes, client_key } = await encrypt_aes(password)
-	axios.put("/accounts/update", {
+	axios.put("/account/update", {
 		password: password_aes,
 		client_key
 	}, axios_auth(session_token))

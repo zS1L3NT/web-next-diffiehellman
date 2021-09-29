@@ -52,7 +52,7 @@ export default class Server {
 	}
 
 	/**
-	 * Expect clients to have already hit "/accounts/exchange-secret"
+	 * Expect clients to have already hit "/account/exchange-secret"
 	 * to get the server key and made their copy of the secret, allowing the
 	 * server to store the secret in {@link cache.dh_keys} as well. After this
 	 * request, the secret will be removed from {@link cache.dh_keys} because we

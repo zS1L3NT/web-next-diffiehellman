@@ -47,7 +47,7 @@ const register = async () => {
 	}
 
 	const { password: password_aes, client_key } = await encrypt_aes(password)
-	axios.post("/accounts/register", {
+	axios.post("/account/register", {
 		username,
 		first_name,
 		last_name,
