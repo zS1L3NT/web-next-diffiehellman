@@ -3,7 +3,8 @@
 		"host": "",
 		"user": "",
 		"password": "",
-		"database": ""
+		"database": "",
+		"timezone": ""
 	},
 	"jwt_secret": "",
 	"smtp": {
