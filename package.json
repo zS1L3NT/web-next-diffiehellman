@@ -1,5 +1,5 @@
 {
-	"name": "web-node-whattoeat",
+	"name": "web-express-whattoeat",
 	"version": "1.0.0",
 	"description": "",
 	"main": "src/app.ts",
