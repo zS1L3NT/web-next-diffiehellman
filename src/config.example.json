@@ -1,0 +1,19 @@
+{
+	"sql": {
+		"host": "",
+		"user": "",
+		"password": "",
+		"database": "",
+		"timezone": ""
+	},
+	"jwt_secret": "",
+	"smtp": {
+		"service": "",
+		"auth": {
+			"user": "",
+			"pass": ""
+		}
+	},
+	"host": "",
+	"google": ""
+}

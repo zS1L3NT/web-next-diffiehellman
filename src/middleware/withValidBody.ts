@@ -1,16 +1,13 @@
 import Validator from "validate-any/build/classes/Validator"
-import { NextApiRequest, NextApiResponse } from "next"
+import { Request, Response } from "express"
 import { validate } from "validate-any"
 
-export interface NextApiRequestWithBody<T extends {}> extends Omit<NextApiRequest, "body"> {
+export interface RequestWithBody<T extends {}> extends Omit<Request, "body"> {
 	body: T
 }
 
-export default <T>(
-	validator: Validator<T>,
-	handler: (req: NextApiRequestWithBody<T>, res: NextApiResponse) => void
-) => {
-	return (req: NextApiRequest, res: NextApiResponse) => {
+export default <T>(validator: Validator<T>, handler: (req: RequestWithBody<T>, res: Response) => void) => {
+	return (req: Request, res: Response) => {
 		const { success, errors, data } = validate(req.body, validator)
 
 		if (success) {

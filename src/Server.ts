@@ -8,14 +8,14 @@ import sql from "mysql2"
  * files, we need one easy way to have a reference to the same data
  * through the files. Hence this class is required
  */
-class Server {
-	public emailer: Mailer
+export default class Server {
+	public mailer: Mailer
 	public db: sql.Connection
 	public dh_keys: Map<string, string>
 	public jwt_blacklist: string[]
 
 	public constructor() {
-		this.emailer = new Mailer()
+		this.mailer = new Mailer()
 		this.db = sql.createConnection(config.sql)
 		this.dh_keys = new Map<string, string>()
 		this.jwt_blacklist = []
@@ -58,25 +58,23 @@ class Server {
 	 *
 	 * With the secret, we will decrypt the password that is encrypted with AES
 	 * and return the original password
-	 * @param password_aes
-	 * @param client_key
+	 * @param aesPassword
+	 * @param clientKey
 	 * @return {string} Decrypted password
 	 */
-	public decrypt_aes(password_aes: string, client_key: string) {
-		const secret = this.dh_keys.get(client_key)
+	public decryptAes(aesPassword: string, clientKey: string) {
+		const secret = this.dh_keys.get(clientKey)
 		if (!secret) {
 			throw new Error("Failed to exchange encryption secrets")
 		}
-		this.dh_keys.delete(client_key)
+		this.dh_keys.delete(clientKey)
 
 		// We repeat and cut the key because AES-256 keys need to be 32 bytes long
 		const key = secret.repeat(3).slice(0, 32)
 		const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), Buffer.alloc(16, 0))
 
-		let decrypted = decipher.update(Buffer.from(password_aes, "hex"))
+		let decrypted = decipher.update(Buffer.from(aesPassword, "hex"))
 		decrypted = Buffer.concat([decrypted, decipher.final()])
 		return decrypted.toString()
 	}
 }
-
-export default new Server()

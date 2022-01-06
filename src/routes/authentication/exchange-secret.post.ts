@@ -1,6 +1,6 @@
 import crypto from "crypto"
-import server from "../../../server"
-import withValidBody from "../../../middleware/withValidBody"
+import server from "../../app"
+import withValidBody from "../../middleware/withValidBody"
 import { LIST, NUMBER, OBJECT, STRING } from "validate-any"
 import { useTry } from "no-try"
 
@@ -23,20 +23,18 @@ export default withValidBody(
 		})
 	}),
 	async (req, res) => {
-		if (req.method === "POST") {
-			const client_key = Buffer.from(req.body.client_key.data)
+		const clientKey = Buffer.from(req.body.client_key.data)
 
-			// @ts-ignore
-			const server_dh = crypto.createDiffieHellman("modp15")
-			const server_key = server_dh.generateKeys()
+		// @ts-ignore
+		const serverDH = crypto.createDiffieHellman("modp15")
+		const serverKeys = serverDH.generateKeys()
 
-			const [err, server_secret] = useTry(() => server_dh.computeSecret(client_key).toString("hex"))
-			if (err) {
-				return res.status(400).send(err.message)
-			}
-
-			server.dh_keys.set(client_key.toString("hex"), server_secret)
-			res.status(200).send({ server_key })
+		const [err, serverSecret] = useTry(() => serverDH.computeSecret(clientKey).toString("hex"))
+		if (err) {
+			return res.status(400).send(err.message)
 		}
+
+		server.dh_keys.set(clientKey.toString("hex"), serverSecret)
+		return res.status(200).send({ server_key: serverKeys })
 	}
 )
