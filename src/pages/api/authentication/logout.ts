@@ -1,21 +1,18 @@
-import { Request, Response } from "express"
-import authenticated from "../../middleware/authenticated";
-import Server from "../../Server";
+import server from "../../../server"
+import withAuthentication from "../../../middleware/withAuthentication"
 
 /**
  * Log the user out of their account
  * @private
- * 
+ *
  * Since deauthenticating a JWT token is not possible, we will
  * add the JWT token to a blacklist, so that the authenticated
  * middleware can reject those tokens if used again after logging
  * out.
  */
-export default (server: Server) => [
-	"post",
-	authenticated(server),
-	(req: Request, res: Response) => {
-		const token = req.header("authorization")!
+export default withAuthentication(async (req, res) => {
+	if (req.method === "POST") {
+		const token = req.headers.authorization!
 		server.jwt_blacklist.push(token)
 
 		/**
@@ -27,4 +24,4 @@ export default (server: Server) => [
 		}, 3600000)
 		res.status(200).end()
 	}
-]
+})

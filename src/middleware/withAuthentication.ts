@@ -1,21 +1,21 @@
-import { NextFunction, Request, Response } from "express"
 import jwt from "jsonwebtoken"
-import { useTry } from "no-try"
+import server from "../server"
 import User from "../models/User"
-import Server from "../Server"
+import { NextApiRequest, NextApiResponse } from "next"
+import { useTry } from "no-try"
 
 /**
  * Middleware for checking if a client's request is authenticated
  * Must pass the Bearer token which is a JWT signature containing the id
  * of the signed in user
- * 
+ *
  * Does not care if the account is deactivated or not
- * 
+ *
  * @param query
  */
-export default (server: Server) =>
-	async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-		const bearer = req.header("authorization")
+export default (handler: (req: NextApiRequest, res: NextApiResponse) => void) =>
+	async (req: NextApiRequest, res: NextApiResponse) => {
+		const bearer = req.headers.authorization
 
 		if (!bearer) {
 			return res.status(403).send("Unauthorized user, no authorization token found")
@@ -26,7 +26,7 @@ export default (server: Server) =>
 			return res.status(403).send("Unauthorized user, invalid authorization token")
 		}
 
-		const token = bearerMatch[1]
+		const token = bearerMatch[1]!
 		// @ts-ignore
 		const [err, user_id] = useTry(() => jwt.verify(token, server.config.jwt_secret).user_id as number)
 		if (err) {
@@ -47,5 +47,5 @@ export default (server: Server) =>
 		}
 
 		req.user = user
-		next()
+		handler(req, res)
 	}

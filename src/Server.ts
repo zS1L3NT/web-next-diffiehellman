@@ -1,24 +1,22 @@
+import config from "./config.json"
 import crypto from "crypto"
+import Mailer from "./Mailer"
 import sql from "mysql2"
-import Emailer from "./Emailer"
 
 /**
  * Class containing all server vairables. Since routes are in different
  * files, we need one easy way to have a reference to the same data
  * through the files. Hence this class is required
  */
-export default class Server {
-	public emailer: Emailer
+class Server {
+	public emailer: Mailer
 	public db: sql.Connection
 	public dh_keys: Map<string, string>
 	public jwt_blacklist: string[]
 
-	public config: any
-
 	public constructor() {
-		this.config = require("../config.json")
-		this.emailer = new Emailer(this)
-		this.db = sql.createConnection(this.config.sql)
+		this.emailer = new Mailer()
+		this.db = sql.createConnection(config.sql)
 		this.dh_keys = new Map<string, string>()
 		this.jwt_blacklist = []
 
@@ -34,7 +32,7 @@ export default class Server {
 	 * of doing the queries like how it should be done by default with callbacks,
 	 * I made the query function awaitable so that my code is easier to write,
 	 * without needing to experience callback hell.
-	 * 
+	 *
 	 * @param sql SQL query
 	 * @param values Values to bind to the query
 	 * @return {Promise<any>} Query promise
@@ -80,3 +78,5 @@ export default class Server {
 		return decrypted.toString()
 	}
 }
+
+export default new Server()
