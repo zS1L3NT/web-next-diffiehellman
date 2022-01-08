@@ -1,8 +1,8 @@
-import config from "../config.json"
+import app from "../../app"
+import config from "../../config.json"
 import jwt from "jsonwebtoken"
-import server from "../app"
-import Token from "../models/Token"
-import withValidBody from "../middleware/withValidBody"
+import Token from "../../models/Token"
+import withValidBody from "../../middleware/withValidBody"
 import { OBJECT, STRING } from "validate-any"
 
 /**
@@ -21,15 +21,12 @@ export default withValidBody(
 	async (req, res) => {
 		const { token: data, action } = req.body
 
-		const [token]: [Token?] = await server.query("SELECT * FROM tokens WHERE data = ? AND action = ?", [
-			data,
-			action
-		])
+		const [token]: [Token?] = await app.query("SELECT * FROM tokens WHERE data = ? AND action = ?", [data, action])
 		if (!token) {
 			return res.status(401).send("No token found in database")
 		}
 
-		await server.query("DELETE FROM tokens WHERE data = ?", [data])
+		await app.query("DELETE FROM tokens WHERE data = ?", [data])
 
 		if (token.expires.getTime() < Date.now()) {
 			return res.status(401).send("Token expired!")

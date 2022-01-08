@@ -1,8 +1,8 @@
+import app from "../../../app"
 import bcrypt from "bcryptjs"
-import server from "../../app"
-import User from "../../models/User"
-import withAuthentication from "../../middleware/withAuthentication"
-import withValidBody from "../../middleware/withValidBody"
+import User from "../../../models/User"
+import withAuthentication from "../../../middleware/withAuthentication"
+import withValidBody from "../../../middleware/withValidBody"
 import { NUMBER, OBJECT, OR, STRING, UNDEFINED } from "validate-any"
 import { useTry } from "no-try"
 
@@ -41,7 +41,7 @@ export default withAuthentication(
 
 				switch (key) {
 					case "password":
-						const [err, password] = useTry(() => server.decryptAes(aes_password!, client_key!))
+						const [err, password] = useTry(() => app.decryptAes(aes_password!, client_key!))
 						if (err) {
 							// Could not decrypt password
 							return res.status(401).send("Could not decrypt password: " + err.message)
@@ -58,9 +58,7 @@ export default withAuthentication(
 						sets.push(`active = ?`)
 						values.push(0)
 
-						const [existingUser]: [User?] = await server.query("SELECT * FROM users WHERE email = ?", [
-							value
-						])
+						const [existingUser]: [User?] = await app.query("SELECT * FROM users WHERE email = ?", [value])
 						if (existingUser) {
 							return res.status(400).send("User with that email address already exists!")
 						}
@@ -75,11 +73,11 @@ export default withAuthentication(
 				return res.status(400).send("Cannot update none of the user's properties")
 			}
 
-			await server.query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
-			const [user]: [User] = await server.query("SELECT * FROM users WHERE id = ?", [req.user!.id])
+			await app.query("UPDATE users SET " + sets.join(", ") + " WHERE id = ?", values.concat(req.user!.id))
+			const [user]: [User] = await app.query("SELECT * FROM users WHERE id = ?", [req.user!.id])
 
 			if (willSendEmail) {
-				await server.mailer.sendAccountActivation(user.id, user.email)
+				await app.mailer.sendAccountActivation(user.id, user.email)
 			}
 
 			return res.status(200).send({

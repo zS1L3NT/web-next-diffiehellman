@@ -1,9 +1,9 @@
+import app from "../../../app"
 import bcrypt from "bcryptjs"
-import config from "../../config.json"
+import config from "../../../config.json"
 import jwt from "jsonwebtoken"
-import server from "../../app"
-import User from "../../models/User"
-import withValidBody from "../../middleware/withValidBody"
+import User from "../../../models/User"
+import withValidBody from "../../../middleware/withValidBody"
 import { OBJECT, STRING } from "validate-any"
 import { useTry } from "no-try"
 
@@ -23,14 +23,14 @@ export default withValidBody(
 	async (req, res) => {
 		const { email, aes_password, client_key } = req.body
 
-		const [existingUser]: [User?] = await server.query("SELECT * FROM users WHERE email = ?", [email])
+		const [existingUser]: [User?] = await app.query("SELECT * FROM users WHERE email = ?", [email])
 		if (!existingUser) {
 			return res.status(401).send("User with that email doesn't exist")
 		}
 
 		// If user hasn't activated their account yet
 		if (existingUser.active === null) {
-			await server.mailer.sendAccountActivation(existingUser.id, existingUser.email)
+			await app.mailer.sendAccountActivation(existingUser.id, existingUser.email)
 			return res
 				.status(403)
 				.send(
@@ -38,7 +38,7 @@ export default withValidBody(
 				)
 		}
 
-		const [err, password] = useTry(() => server.decryptAes(aes_password, client_key))
+		const [err, password] = useTry(() => app.decryptAes(aes_password, client_key))
 		if (err) {
 			// Could not decrypt password
 			return res.status(401).send("Could not decrypt password: " + err.message)

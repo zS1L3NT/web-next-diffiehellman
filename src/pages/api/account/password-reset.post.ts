@@ -1,6 +1,6 @@
-import server from "../../app"
-import User from "../../models/User"
-import withValidBody from "../../middleware/withValidBody"
+import app from "../../../app"
+import User from "../../../models/User"
+import withValidBody from "../../../middleware/withValidBody"
 import { OBJECT, STRING } from "validate-any"
 import { useTryAsync } from "no-try"
 
@@ -19,12 +19,12 @@ export default withValidBody(
 	async (req, res) => {
 		const email = req.body.email
 
-		const [existingUser]: [User?] = await server.query("SELECT * FROM users WHERE email = ?", [email])
+		const [existingUser]: [User?] = await app.query("SELECT * FROM users WHERE email = ?", [email])
 		if (!existingUser) {
 			return res.status(400).send("No account registered with that email address")
 		}
 
-		const [err] = await useTryAsync(() => server.mailer.sendPasswordReset(existingUser.id, email))
+		const [err] = await useTryAsync(() => app.mailer.sendPasswordReset(existingUser.id, email))
 		if (err) {
 			console.log(err)
 			return res.status(400).send("Email address entered is invalid")

@@ -1,7 +1,7 @@
 import User from "./models/User"
 
-declare module "express" {
-	interface Request {
+declare module "next" {
+	interface NextApiRequest {
 		user?: User
 	}
 }

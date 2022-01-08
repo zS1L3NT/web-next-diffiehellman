@@ -1,6 +1,6 @@
+import app from "../../../app"
 import crypto from "crypto"
-import server from "../../app"
-import withValidBody from "../../middleware/withValidBody"
+import withValidBody from "../../../middleware/withValidBody"
 import { LIST, NUMBER, OBJECT, STRING } from "validate-any"
 import { useTry } from "no-try"
 
@@ -34,7 +34,7 @@ export default withValidBody(
 			return res.status(400).send(err.message)
 		}
 
-		server.dh_keys.set(clientKey.toString("hex"), serverSecret)
+		app.dh_keys.set(clientKey.toString("hex"), serverSecret)
 		return res.status(200).send({ server_key: serverKeys })
 	}
 )

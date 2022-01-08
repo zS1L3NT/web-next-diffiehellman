@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 import server from "../app"
 import User from "../models/User"
-import { Request, Response } from "express"
+import { NextApiRequest, NextApiResponse } from "next"
 import { useTry } from "no-try"
 
 /**
@@ -13,38 +13,39 @@ import { useTry } from "no-try"
  *
  * @param query
  */
-export default (handler: (req: Request, res: Response) => void) => async (req: Request, res: Response) => {
-	const bearer = req.headers.authorization
+export default (handler: (req: NextApiRequest, res: NextApiResponse) => void) =>
+	async (req: NextApiRequest, res: NextApiResponse) => {
+		const bearer = req.headers.authorization
 
-	if (!bearer) {
-		return res.status(403).send("Unauthorized user, no authorization token found")
+		if (!bearer) {
+			return res.status(403).send("Unauthorized user, no authorization token found")
+		}
+
+		const bearerMatch = bearer.match(/^Bearer (.*)$/)
+		if (!bearerMatch) {
+			return res.status(403).send("Unauthorized user, invalid authorization token")
+		}
+
+		const token = bearerMatch[1]!
+		// @ts-ignore
+		const [err, userId] = useTry(() => jwt.verify(token, server.config.jwt_secret).user_id as number)
+		if (err) {
+			return res.status(403).send("Unauthorized user, token was invalid")
+		}
+
+		if (server.jwt_blacklist.includes(token)) {
+			return res.status(403).send("Unauthorized user, authorization token deauthenticated")
+		}
+
+		const [user]: [User?] = await server.query("SELECT * FROM users WHERE id = ?", [userId])
+		if (!user) {
+			return res.status(403).send("Unauthorized user, token data was invalid")
+		}
+
+		if (user.active !== null && !user.active) {
+			return res.status(403).send("Unauthorized user, account not activated")
+		}
+
+		req.user = user
+		return handler(req, res)
 	}
-
-	const bearerMatch = bearer.match(/^Bearer (.*)$/)
-	if (!bearerMatch) {
-		return res.status(403).send("Unauthorized user, invalid authorization token")
-	}
-
-	const token = bearerMatch[1]!
-	// @ts-ignore
-	const [err, userId] = useTry(() => jwt.verify(token, server.config.jwt_secret).user_id as number)
-	if (err) {
-		return res.status(403).send("Unauthorized user, token was invalid")
-	}
-
-	if (server.jwt_blacklist.includes(token)) {
-		return res.status(403).send("Unauthorized user, authorization token deauthenticated")
-	}
-
-	const [user]: [User?] = await server.query("SELECT * FROM users WHERE id = ?", [userId])
-	if (!user) {
-		return res.status(403).send("Unauthorized user, token data was invalid")
-	}
-
-	if (user.active !== null && !user.active) {
-		return res.status(403).send("Unauthorized user, account not activated")
-	}
-
-	req.user = user
-	return handler(req, res)
-}
