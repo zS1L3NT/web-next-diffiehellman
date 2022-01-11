@@ -1,19 +1,10 @@
 {
-	"sql": {
-		"host": "",
-		"user": "",
-		"password": "",
-		"database": "",
-		"timezone": ""
-	},
-	"jwt_secret": "",
-	"smtp": {
-		"service": "",
-		"auth": {
-			"user": "",
-			"pass": ""
-		}
-	},
-	"host": "",
-	"google": ""
+	"firebase": {
+		"service_account": {
+			"projectId": "",
+			"privateKey": "",
+			"clientEmail": ""
+		},
+		"database_url": ""
+	}
 }
